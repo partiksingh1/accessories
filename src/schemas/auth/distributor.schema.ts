@@ -10,6 +10,7 @@ export const distributorSignupSchema = z.object({
   contactNumber: z.string().regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number'),
   gst: z.string().optional(),
   pan: z.string().optional(),
+  city: z.string().min(2, 'City must be at least 2 characters'),
 })
 
 export const distributorLoginSchema = z.object({

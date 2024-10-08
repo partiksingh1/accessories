@@ -1,14 +1,27 @@
 import { z } from 'zod'
 
-export const orderSchema = z.object({
-  productName: z.string().min(2, 'Product name must be at least 2 characters'),
-  productPetName: z.string().optional(),
-  productCode: z.string().min(1, 'Product code is required'),
-  productQty: z.number().positive('Quantity must be positive'),
-  price: z.number().positive('Price must be positive'),
-  discountedPrice: z.number().positive('Discounted price must be positive').optional(),
+export const OrderStatusEnum = z.enum(['PENDING', 'PROCESSED', 'SHIPPED', 'DELIVERED', 'CANCELLED']);
+export const OrderItemSchema = z.object({
+  id: z.string().optional(), // optional for new items
+  quantity: z.number().int().positive(),
+  price: z.number().positive(),
+  discountedPrice: z.number().positive().optional(),
+  productId: z.string() // required for linking to a product
+});
+// Order Schema
+const OrderSchema = z.object({
+  id: z.string().optional(), // optional for new orders
+  orderNumber: z.string(),
+  totalAmount: z.number().positive(),
   paymentTerm: z.string(),
-  shopkeeperId: z.string().min(1, 'Shopkeeper ID is required')
-})
+  status: OrderStatusEnum.default('PENDING'), // default to PENDING
+  notes: z.string().optional(),
+  createdAt: z.date().optional(), // optional, can be set by the backend
+  updatedAt: z.date().optional(), // optional, can be set by the backend
+  shopkeeperId: z.string(), // required to link to a shopkeeper
+  createdById: z.string(), // required to link to the salesperson who created the order
+  assignedToId: z.string(), // required to link to the distributor
+  items: z.array(OrderItemSchema), // array of order items
+});
 
-export type OrderData = z.infer<typeof orderSchema>
+export type OrderSchemaData = z.infer<typeof OrderSchema>

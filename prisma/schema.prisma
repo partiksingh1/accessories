@@ -16,6 +16,8 @@ enum Role {
 enum OrderStatus {
   PENDING
   PROCESSED
+  SHIPPED
+  DELIVERED
   CANCELLED
 }
 
@@ -31,6 +33,23 @@ model User {
   // Relations
   salesperson   Salesperson?
   distributor   Distributor?
+  createdProducts Product[]    @relation("CreatedBy")
+}
+
+model Product {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  petName       String?
+  code          String    @unique
+  price         Float
+  description   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  createdBy     User      @relation("CreatedBy", fields: [createdById], references: [id])
+  createdById   String    @db.ObjectId
+  orderItems    OrderItem[]
 }
 
 model Salesperson {
@@ -38,13 +57,14 @@ model Salesperson {
   userId         String        @unique @db.ObjectId
   user           User          @relation(fields: [userId], references: [id])
   employeeCode   String        @unique
-  phoneNumber    String        // Renamed from 'number' for clarity
+  phoneNumber    String
   city           String
   
   // Relations
   shopkeepers    Shopkeeper[]
   distributors   Distributor[] @relation(fields: [distributorIds], references: [id])
   distributorIds String[]      @db.ObjectId
+  orders         Order[]       @relation("CreatedBy")
 }
 
 model Distributor {
@@ -58,10 +78,12 @@ model Distributor {
   contactNumber     String
   gst               String?
   pan               String?
+  city              String
   
   // Relations
   salespersons      Salesperson[] @relation(fields: [salespersonIds], references: [id])
   salespersonIds    String[]      @db.ObjectId
+  orders            Order[]       @relation("AssignedTo")
 }
 
 model Shopkeeper {
@@ -69,9 +91,10 @@ model Shopkeeper {
   shopName       String
   ownerName      String
   publicName     String?
-  contactNumber  String       // Renamed from 'contactDetails' for consistency
-  location       String
-  
+  contactNumber  String
+  city           String
+  gst            String?
+  pan            String?
   // Relations
   salespersonId  String       @db.ObjectId
   salesperson    Salesperson  @relation(fields: [salespersonId], references: [id])
@@ -80,18 +103,36 @@ model Shopkeeper {
 
 model Order {
   id              String      @id @default(auto()) @map("_id") @db.ObjectId
-  productName     String
-  productPetName  String?
-  productCode     String
-  quantity        Int         // Renamed from 'productQty' for clarity
-  price           Float
-  discountedPrice Float?
+  orderNumber     String      @unique
+  totalAmount     Float
   paymentTerm     String
   status          OrderStatus @default(PENDING)
+  notes           String?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
   
   // Relations
+  items           OrderItem[]
   shopkeeperId    String      @db.ObjectId
   shopkeeper      Shopkeeper  @relation(fields: [shopkeeperId], references: [id])
+  
+  createdBy       Salesperson @relation("CreatedBy", fields: [createdById], references: [id])
+  createdById     String      @db.ObjectId
+  
+  assignedTo      Distributor @relation("AssignedTo", fields: [assignedToId], references: [id])
+  assignedToId    String      @db.ObjectId
+}
+
+model OrderItem {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  quantity        Int
+  price           Float
+  discountedPrice Float?
+  
+  // Relations
+  orderId         String    @db.ObjectId
+  order           Order     @relation(fields: [orderId], references: [id])
+  
+  productId       String    @db.ObjectId
+  product         Product   @relation(fields: [productId], references: [id])
 }

@@ -41,6 +41,7 @@ export async function POST(req: Request) {
         contactNumber: validatedData.contactNumber,
         gst: validatedData.gst,
         pan: validatedData.pan,
+        city : validatedData.city,
       },
     });
 
