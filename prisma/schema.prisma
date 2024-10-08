@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SALESPERSON
+  DISTRIBUTOR
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSED
+  CANCELLED
+}
+
+model User {
+  id            String      @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  email         String      @unique
+  password      String
+  role          Role
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Relations
+  salesperson   Salesperson?
+  distributor   Distributor?
+}
+
+model Salesperson {
+  id             String        @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String        @unique @db.ObjectId
+  user           User          @relation(fields: [userId], references: [id])
+  employeeCode   String        @unique
+  phoneNumber    String        // Renamed from 'number' for clarity
+  city           String
+  
+  // Relations
+  shopkeepers    Shopkeeper[]
+  distributors   Distributor[] @relation(fields: [distributorIds], references: [id])
+  distributorIds String[]      @db.ObjectId
+}
+
+model Distributor {
+  id                String         @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String         @unique @db.ObjectId
+  user              User           @relation(fields: [userId], references: [id])
+  shopName          String
+  ownerName         String
+  publicName        String?
+  businessAddress   String
+  contactNumber     String
+  gst               String?
+  pan               String?
+  
+  // Relations
+  salespersons      Salesperson[] @relation(fields: [salespersonIds], references: [id])
+  salespersonIds    String[]      @db.ObjectId
+}
+
+model Shopkeeper {
+  id             String       @id @default(auto()) @map("_id") @db.ObjectId
+  shopName       String
+  ownerName      String
+  publicName     String?
+  contactNumber  String       // Renamed from 'contactDetails' for consistency
+  location       String
+  
+  // Relations
+  salespersonId  String       @db.ObjectId
+  salesperson    Salesperson  @relation(fields: [salespersonId], references: [id])
+  orders         Order[]
+}
+
+model Order {
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  productName     String
+  productPetName  String?
+  productCode     String
+  quantity        Int         // Renamed from 'productQty' for clarity
+  price           Float
+  discountedPrice Float?
+  paymentTerm     String
+  status          OrderStatus @default(PENDING)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  // Relations
+  shopkeeperId    String      @db.ObjectId
+  shopkeeper      Shopkeeper  @relation(fields: [shopkeeperId], references: [id])
+}
